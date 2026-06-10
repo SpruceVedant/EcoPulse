@@ -6,7 +6,7 @@
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/1ac408fa-e937-4331-b066-04c65683b7e2
+View app : https://ecopulse-611130054342.asia-southeast1.run.app/
 
 ## Run Locally
 
