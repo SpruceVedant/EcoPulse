@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_-]+$');
+    }
+
+    // Validation definitions
+    function isValidUser(data) {
+      return data.uid == request.auth.uid 
+        && data.points is int && data.points >= 0
+        && data.streak is int && data.streak >= 0
+        && data.email is string && data.email.size() <= 256;
+    }
+
+    function isValidFootprint(data) {
+      return data.userId == request.auth.uid
+        && data.totalFootprint is int && data.totalFootprint >= 0
+        && (data.carbonScore == 'Low' || data.carbonScore == 'Medium' || data.carbonScore == 'High')
+        && data.completedAt is string && data.completedAt.size() <= 128
+        && data.categories is map
+        && data.inputs is map;
+    }
+
+    // Progression Badge schema checking
+    function isValidBadge(data) {
+      return data.id is string && data.id.size() <= 64
+        && data.name is string && data.name.size() <= 128
+        && data.description is string && data.description.size() <= 512
+        && data.icon is string && data.icon.size() <= 128
+        && data.unlocked is bool
+        && data.category is string && data.category.size() <= 128;
+    }
+
+    // Action plan checklist items checking
+    function isValidActionItem(data) {
+      return data.id is string && data.id.size() <= 64
+        && data.day is int && data.day >= 0
+        && data.title is string && data.title.size() <= 256
+        && (data.co2Saved is int || data.co2Saved is float) && data.co2Saved >= 0
+        && data.points is int && data.points >= 0
+        && data.completed is bool
+        && data.category is string && data.category.size() <= 128;
+    }
+
+    // Daily active challenges checking
+    function isValidDailyChallenge(data) {
+      return data.id is string && data.id.size() <= 64
+        && data.title is string && data.title.size() <= 256
+        && data.description is string && data.description.size() <= 512
+        && data.points is int && data.points >= 0
+        && (data.co2Saved is int || data.co2Saved is float) && data.co2Saved >= 0
+        && data.completed is bool;
+    }
+
+    // Rules matching collections
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) 
+        && request.resource.data.uid == resource.data.uid; // uid must remain immutable
+      allow delete: if isOwner(userId);
+
+      // Footprints historical calculations
+      match /footprints/{footprintId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidFootprint(request.resource.data) && isValidId(footprintId);
+        allow update: if isOwner(userId) && isValidFootprint(request.resource.data) && isValidId(footprintId)
+          && request.resource.data.userId == resource.data.userId; // userId must remain immutable
+        allow delete: if isOwner(userId);
+      }
+
+      // User's progression badges
+      match /badges/{badgeId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidBadge(request.resource.data) && isValidId(badgeId);
+        allow update: if isOwner(userId) && isValidBadge(request.resource.data) && isValidId(badgeId);
+        allow delete: if isOwner(userId);
+      }
+
+      // User's current carbon actions plan
+      match /plans/{planId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidActionItem(request.resource.data) && isValidId(planId);
+        allow update: if isOwner(userId) && isValidActionItem(request.resource.data) && isValidId(planId);
+        allow delete: if isOwner(userId);
+      }
+
+      // User's daily challenge tasks
+      match /challenges/{challengeId} {
+        allow list, get: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidDailyChallenge(request.resource.data) && isValidId(challengeId);
+        allow update: if isOwner(userId) && isValidDailyChallenge(request.resource.data) && isValidId(challengeId);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "Represents a user profile with gamification metrics and carbon status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "The unique Firebase UID of the user" },
+        "points": { "type": "integer", "description": "Current eco points accumulated" },
+        "streak": { "type": "integer", "description": "Number of consecutive active days" },
+        "email": { "type": "string", "description": "User email address" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "User account sign up date" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Account last update date" }
+      },
+      "required": ["uid", "points", "streak", "email"]
+    },
+    "footprint": {
+      "title": "Footprint",
+      "description": "A single calculated carbon footprint entry",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The user owner UID" },
+        "totalFootprint": { "type": "integer", "description": "Total monthly CO2 emissions in kg" },
+        "carbonScore": { "type": "string", "enum": ["Low", "Medium", "High"], "description": "Calculated carbon category score" },
+        "completedAt": { "type": "string", "format": "date-time", "description": "Timestamp of calculation run" },
+        "categories": { "type": "object", "description": "Raw footprint breakdown metrics by category" },
+        "inputs": { "type": "object", "description": "Input sliders configuration selected by the user" }
+      },
+      "required": ["userId", "totalFootprint", "carbonScore", "completedAt", "categories", "inputs"]
+    },
+    "badge": {
+      "title": "Unlocked Badge",
+      "description": "Represents a user's unlocked achievement badges",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The identifier of the badge" },
+        "name": { "type": "string", "description": "Human-readable label" },
+        "description": { "type": "string", "description": "Achievement condition description" },
+        "icon": { "type": "string", "description": "Lucide icon string" },
+        "unlocked": { "type": "boolean", "description": "Whether the badge is unlocked or not" },
+        "unlockedAt": { "type": "string", "format": "date-time", "description": "ISO timestamp of unlock" },
+        "category": { "type": "string", "description": "Badge classification" }
+      },
+      "required": ["id", "name", "description", "icon", "unlocked", "category"]
+    },
+    "actionItem": {
+      "title": "Action Plan Item",
+      "description": "Reflects the completion of a customized carbon reduction checklist plan item",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Action item unique ID" },
+        "day": { "type": "integer", "description": "Day of plan" },
+        "title": { "type": "string", "description": "Short action name" },
+        "description": { "type": "string", "description": "Instructions details" },
+        "co2Saved": { "type": "number", "description": "CO2 savings estimate" },
+        "difficulty": { "type": "string", "enum": ["Easy", "Medium", "Hard"] },
+        "points": { "type": "integer", "description": "Points value on completion" },
+        "completed": { "type": "boolean" },
+        "category": { "type": "string" }
+      },
+      "required": ["id", "day", "title", "co2Saved", "points", "completed", "category"]
+    },
+    "dailyChallenge": {
+      "title": "Daily Challenge",
+      "description": "Status of a user's daily challenge completion",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Challenge unique key" },
+        "title": { "type": "string", "description": "Challenge name" },
+        "description": { "type": "string" },
+        "points": { "type": "integer" },
+        "co2Saved": { "type": "number" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["id", "title", "description", "points", "co2Saved", "completed"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "user",
+      "description": "Top-level user profile"
+    },
+    "/users/{userId}/footprints/{footprintId}": {
+      "schema": "footprint",
+      "description": "List of current and historical carbon footprint calculations"
+    },
+    "/users/{userId}/badges/{badgeId}": {
+      "schema": "badge",
+      "description": "A user's badges achievement list status"
+    },
+    "/users/{userId}/plans/{planId}": {
+      "schema": "actionItem",
+      "description": "Refers to the personalized 7-Day action items checklist state"
+    },
+    "/users/{userId}/challenges/{challengeId}": {
+      "schema": "dailyChallenge",
+      "description": "Predefined challenge tasks list status"
+    }
+  }
+}
